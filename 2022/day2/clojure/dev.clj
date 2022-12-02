@@ -47,3 +47,43 @@
          (apply +))))
 (problem-1) ; 11767
 
+(def round-result-mapping
+  {"X" :lose
+   "Y" :draw
+   "Z" :win})
+
+(defn my-hand-for-round
+  [you round-result]
+  (let [round [you round-result]]
+    (condp = round
+      [:rock :draw] you
+      [:paper :draw] you
+      [:scissor :draw] you
+      [:rock :lose] :scissor
+      [:rock :win] :paper
+      [:paper :lose] :rock
+      [:paper :win] :scissor
+      [:scissor :lose] :paper
+      [:scissor :win] :rock)))
+
+(def round-result-score
+  {:lose 0
+   :draw 3
+   :win 6})
+
+(defn problem-2
+  []
+  (let [lines (with-open [file (io/reader "/home/calvinq/projects/aoc/2022/day2/input.txt")]
+                (doall (line-seq file)))]
+    (->> lines
+         ;; parse each round to ["A" "X"]
+         (mapv #(str/split % #" "))
+         ;; serialize each round
+         (mapv (fn [[you round-result]] (vector (get mapping you) (get round-result-mapping round-result))))
+         ;; determine my hand
+         (mapv (fn [[you round-result]] (vector (my-hand-for-round you round-result) round-result)))
+         ;; calculate score for round
+         (mapv (fn [[me round-result]] (+ (hand-shape-score me) (get round-result-score round-result))))
+         ;; calculate total score
+         (apply +))))
+(problem-2) ; 13886
