@@ -13,6 +13,10 @@ fn main() -> io::Result<()> {
     let result = problem_1(lines.clone());
     println!("problem 1: {:?}", result);
 
+    let result = problem_2(lines.clone());
+    println!("problem 2: {:?}", result);
+
+
     Ok(())
 }
 
@@ -23,7 +27,7 @@ enum Hand {
     Scissor,
 }
 
-#[derive(Clone)]
+#[derive(Clone, PartialEq, Eq)]
 enum RoundResult {
     Lose,
     Draw,
@@ -88,6 +92,51 @@ fn problem_1(lines: Vec<String>) -> u64 {
             // determine score
             let round_score = calculate_round_score(&you, &me);
             let hand_score = get_hand_score(me);
+
+            round_score + hand_score
+        })
+        .sum();
+    total_points
+}
+
+fn determine_my_hand(you: &Hand, result: &RoundResult) -> Hand {
+    if result == &RoundResult::Draw {
+        return you.clone()
+    }
+    match (you, result) {
+        (Hand::Rock, RoundResult::Win) => Hand::Paper,
+        (Hand::Rock, RoundResult::Lose) => Hand::Scissor,
+        (Hand::Paper, RoundResult::Win) => Hand::Scissor,
+        (Hand::Paper, RoundResult::Lose) => Hand::Rock,
+        (Hand::Scissor, RoundResult::Win) => Hand::Rock,
+        (Hand::Scissor, RoundResult::Lose) => Hand::Paper,
+        _ => panic!("")
+    }
+}
+
+fn problem_2(lines: Vec<String>) -> u64 {
+    let total_points: u64 = lines
+        .iter()
+        .map(|round_string| {
+            // parse the round string
+            let round_raw: Vec<&str> = round_string.split(" ").collect();
+            let you = match *round_raw.get(0).unwrap() {
+                "A" => Hand::Rock,
+                "B" => Hand::Paper,
+                "C" => Hand::Scissor,
+                _ => panic!(""),
+            };
+            let round_result = match *round_raw.get(1).unwrap() {
+                "X" => RoundResult::Lose,
+                "Y" => RoundResult::Draw,
+                "Z" => RoundResult::Win,
+                _ => panic!(""),
+            };
+
+            // determine score
+            let round_score = get_result_score(&round_result);
+            let me = determine_my_hand(&you, &round_result);
+            let hand_score = get_hand_score(&me);
 
             round_score + hand_score
         })
