@@ -46,9 +46,9 @@ mod tests {
     }
 }
 
-fn problem_1(mut lines: Vec<String>) -> u64 {
+fn problem_1(lines: Vec<String>) -> u64 {
     let answer = lines
-        .iter_mut()
+        .into_iter()
         .map(|line| {
             // idenify common character
             let line_len = line.len();
