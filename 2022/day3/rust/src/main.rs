@@ -14,6 +14,8 @@ fn main() -> io::Result<()> {
     let result = problem_1(lines.clone());
     println!("problem 1: {:?}", result);
 
+    let result = problem_2(lines.clone());
+    println!("problem 2: {:?}", result);
     Ok(())
 }
 
@@ -45,22 +47,51 @@ mod tests {
 }
 
 fn problem_1(mut lines: Vec<String>) -> u64 {
-    let answer = lines.iter_mut().map(|line| {
-        // idenify common character
-        let line_len = line.len();
-        let (left, right) = line.split_at(line_len / 2);
-        let left = left.chars().collect::<HashSet<char>>();
-        let right = right.chars().collect::<HashSet<char>>();
-        let common_chars = right
-            .intersection(&left)
-            .map(|c| c.clone())
-            .collect::<Vec<char>>();
-        let common_char = common_chars.get(0).unwrap().clone();
+    let answer = lines
+        .iter_mut()
+        .map(|line| {
+            // idenify common character
+            let line_len = line.len();
+            let (left, right) = line.split_at(line_len / 2);
+            let left = left.chars().collect::<HashSet<char>>();
+            let right = right.chars().collect::<HashSet<char>>();
+            let common_chars = right
+                .intersection(&left)
+                .map(|c| c.clone())
+                .collect::<Vec<char>>();
+            let common_char = common_chars.get(0).unwrap().clone();
 
-        // calculate priority
+            // calculate priority
+            let priority = calculate_priority(&common_char);
+            priority
+        })
+        .sum::<u64>();
+
+    return answer;
+}
+
+fn problem_2(lines: Vec<String>) -> u64 {
+    let answer = lines.chunks(3).map(|chunk| {
+        // idenify matching char in the chunk
+        let common_chars = chunk
+            .into_iter()
+            .map(|elf_string| {
+                let elf_characters = elf_string.chars().collect::<HashSet<char>>();
+                elf_characters
+            })
+            .reduce(|acc, character_set| {
+                acc.intersection(&character_set)
+                    .map(|c| c.clone())
+                    .collect::<HashSet<char>>()
+            })
+            .unwrap()
+            .into_iter()
+            .collect::<Vec<char>>();
+
+        let common_char = common_chars.get(0).unwrap().clone();
         let priority = calculate_priority(&common_char);
         priority
-    }).sum::<u64>();
+    }).sum();
 
     return answer
 }
