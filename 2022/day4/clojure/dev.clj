@@ -9,7 +9,7 @@
   [x]
   (do (println x) x))
 
-(defn range-fully-contained* 
+(defn range-fully-contained*
   [[range1-low range1-high] [range2-low range2-high]]
   (and
         ;; range1-low < range2-low < range1-high
@@ -77,3 +77,43 @@
 
                  0))))
 (problem-1) ; 569
+
+(defn range-overlaps*
+  [[range1-low range1-high] [range2-low range2-high]]
+  (or
+   ;; range1-low < range2-low < range1-high
+   (and (<= range2-low range1-high) (<= range1-low range2-low))
+   ;; range2-low < range2-high < range2-high
+   (and (<= range2-high range1-high) (<= range1-low range2-low))))
+
+(defn range-overlaps
+  "returns true if one of the ranges overlaps the other"
+  [range-1 range-2]
+  (or (range-overlaps* range-1 range-2)
+      (range-overlaps* range-2 range-1)))
+
+(defn problem-2
+  []
+  (let [lines (with-open [file (io/reader "/home/calvinq/projects/aoc/2022/day4/input.txt")]
+                (doall (line-seq file)))]
+    (->> lines
+         ;; for each line, create team pairs [[pair-1 pair-1]
+         ;;                                   [pair-2 pair-2]]
+         (mapv #(str/split % #","))
+         ;; each team pair, create ranges
+         ;;  team = [pair-a pair-b]
+         (mapv (fn [team] (->> team
+                               ;; team = [[left-a right-a] [left-b, right-b]] 
+                               (mapv #(str/split % #"-"))
+                               ;; convert from string to int ranges
+                               (mapv (fn [[left-section right-section]]
+                                       (vector (edn/read-string left-section) (edn/read-string right-section)))))))
+         ;; for each team, identify if they overlap
+         (reduce (fn [acc team]
+                   (let [[elf1-range elf2-range] team]
+                     (if (range-overlaps elf1-range elf2-range)
+                       (inc acc)
+                       acc)))
+
+                 0))))
+(problem-2) ; 936
