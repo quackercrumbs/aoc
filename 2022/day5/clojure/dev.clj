@@ -164,17 +164,17 @@
                 (mapv (fn [{:keys [amount src dest]}] (vector amount src dest))))))))
 
 (defn run-actions
-  [init-state actions]
+  [crane-f init-state actions]
   (reduce (fn [state {:keys [amount src dest] :as action}]
             #_(println "State:")
-            #_(pretty-print-stacks state)
-            #_(println "Action:" action)
+            (pretty-print-stacks state)
+            (println "Action:" action)
+            (println "--------------")
             (let [src-stack (get state src)
                   dest-stack (get state dest)
-                  elems-to-move (reverse (take amount src-stack))
+                  elems-to-move (crane-f (take amount src-stack))
                   new-dest-stack (concat elems-to-move dest-stack)
                   new-src-stack (drop amount src-stack)]
-              #_(println "--------------")
               (assoc state
                      src new-src-stack
                      dest new-dest-stack)))
@@ -188,7 +188,6 @@
                                    first)))
           ""
           (range 1 (+ 1 (count (keys state))))))
-
 (deftest test-run-actions
   (let [test-str ["    [D]    "
                   "[N] [C]    "
@@ -200,7 +199,7 @@
                   "move 2 from 2 to 1"
                   "move 1 from 1 to 2"]
         [initial-state actions] (parse-data test-str)
-        final-state (run-actions initial-state actions)]
+        final-state (run-actions reverse initial-state actions)]
     (is (= "CMZ" (get-answer final-state)))))
 
 (defn problem-1
@@ -209,11 +208,48 @@
                 (doall (line-seq file)))]
     (let [[initial-state actions] (->> lines
                                        parse-data)
-          final-state (run-actions initial-state actions)
+          final-state (run-actions reverse initial-state actions)
           answer (get-answer final-state)]
       answer)))
 
 (time
  (problem-1)) ; "SPFMVDTZT"
-;; 147.915 ms
+; "SPFMVDTZT"
+;; 16 ms
+
+(defn crane-p2
+  [coll]
+  (->> (partition-all 3 coll)
+       reverse
+       (apply concat)))
+(deftest test-crane-p2
+   (is (= [7 4 5 6 1 2 3] (crane-p2 [1 2 3 4 5 6 7])))
+   (is (= [1 2] (crane-p2 [1 2])))
+   (is (= [1 2 3] (crane-p2 [1 2 3])))
+   )
+(deftest test-run-actions-p2
+  (let [test-str ["    [D]    "
+                  "[N] [C]    "
+                  "[Z] [M] [P]"
+                  " 1   2   3 "
+                  ""
+                  "move 1 from 2 to 1"
+                  "move 3 from 1 to 3"
+                  "move 2 from 2 to 1"
+                  "move 1 from 1 to 2"]
+        [initial-state actions] (parse-data test-str)
+        final-state (run-actions crane-p2 initial-state actions)]
+    (is (= "MCD" (get-answer final-state)))))
+
+(defn problem-2
+  []
+  (let [lines (with-open [file (io/reader "/home/calvinq/projects/aoc/2022/day5/input.txt")]
+                (doall (line-seq file)))]
+    (let [[initial-state actions] (->> lines
+                                       parse-data)
+          final-state (run-actions crane-p2 initial-state actions)
+          answer (get-answer final-state)]
+      answer)))
+(time (problem-2)) ; "FMVZZPSZT"
+;; 5ms
 
