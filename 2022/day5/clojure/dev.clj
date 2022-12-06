@@ -167,9 +167,9 @@
   [crane-f init-state actions]
   (reduce (fn [state {:keys [amount src dest] :as action}]
             #_(println "State:")
-            (pretty-print-stacks state)
-            (println "Action:" action)
-            (println "--------------")
+            #_(pretty-print-stacks state)
+            #_(println "Action:" action)
+            #_(println "--------------")
             (let [src-stack (get state src)
                   dest-stack (get state dest)
                   elems-to-move (crane-f (take amount src-stack))
@@ -219,14 +219,11 @@
 
 (defn crane-p2
   [coll]
-  (->> (partition-all 3 coll)
-       reverse
-       (apply concat)))
+  coll)
 (deftest test-crane-p2
-   (is (= [7 4 5 6 1 2 3] (crane-p2 [1 2 3 4 5 6 7])))
-   (is (= [1 2] (crane-p2 [1 2])))
-   (is (= [1 2 3] (crane-p2 [1 2 3])))
-   )
+  (is (= [7 4 5 6 1 2 3] (crane-p2 [1 2 3 4 5 6 7])))
+  (is (= [1 2] (crane-p2 [1 2])))
+  (is (= [1 2 3] (crane-p2 [1 2 3]))))
 (deftest test-run-actions-p2
   (let [test-str ["    [D]    "
                   "[N] [C]    "
@@ -250,6 +247,5 @@
           final-state (run-actions crane-p2 initial-state actions)
           answer (get-answer final-state)]
       answer)))
-(time (problem-2)) ; "FMVZZPSZT"
-;; 5ms
-
+(time (problem-2))  ; "ZFSJBPRFP"
+;; 2 ms
