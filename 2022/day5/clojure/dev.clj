@@ -217,13 +217,6 @@
 ; "SPFMVDTZT"
 ;; 16 ms
 
-(defn crane-p2
-  [coll]
-  coll)
-(deftest test-crane-p2
-  (is (= [7 4 5 6 1 2 3] (crane-p2 [1 2 3 4 5 6 7])))
-  (is (= [1 2] (crane-p2 [1 2])))
-  (is (= [1 2 3] (crane-p2 [1 2 3]))))
 (deftest test-run-actions-p2
   (let [test-str ["    [D]    "
                   "[N] [C]    "
@@ -235,7 +228,7 @@
                   "move 2 from 2 to 1"
                   "move 1 from 1 to 2"]
         [initial-state actions] (parse-data test-str)
-        final-state (run-actions crane-p2 initial-state actions)]
+        final-state (run-actions identity initial-state actions)]
     (is (= "MCD" (get-answer final-state)))))
 
 (defn problem-2
@@ -244,7 +237,7 @@
                 (doall (line-seq file)))]
     (let [[initial-state actions] (->> lines
                                        parse-data)
-          final-state (run-actions crane-p2 initial-state actions)
+          final-state (run-actions identity initial-state actions)
           answer (get-answer final-state)]
       answer)))
 (time (problem-2))  ; "ZFSJBPRFP"
