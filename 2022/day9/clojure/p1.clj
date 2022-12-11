@@ -74,7 +74,9 @@
                           "L" (update head :x dec)
                           "U" (update head :y inc)
                           "D" (update head :y dec))
-                  ;; update tail if it is out of range
+                  ;; !!!!!NOTE!!!!! This implementation doesn't adhere to problem Spec, check p2.
+                  ;;   Problem, describe the special rules to follow when updating the tail position.
+                  ;;   Even though, this produces the correct answer, it is not the right one.
                         new-tail (if (not (in-range new-head tail))
                                    head
                                    tail)]
