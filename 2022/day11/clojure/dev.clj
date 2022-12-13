@@ -5,7 +5,8 @@
             [clojure.string :as str]
             [clojure.pprint :as pp]
             [clojure.test :as test :refer [deftest is]])
-  (:import [java.lang Character]))
+  (:import [java.lang Character
+            System]))
 
 (defn get-sample-input
   []
@@ -14,9 +15,6 @@
      (doall (line-seq file)))
    (into [])))
 
-(->> ["Test1" "Test2" "" "Test3"]
-     (partition-by #(= "" %))
-     (filter #(not= [""] %)))
 (defn find-1-num
   [s]
   (->> (re-find #"\d+" s) edn/read-string))
@@ -24,7 +22,7 @@
   "There are five lines per monkey string"
   [lines]
   (let [monkey-id (->> (get lines 0) find-1-num)
-        starting-items (->> (get lines 1) (re-seq #"\d+") (mapv edn/read-string))
+        starting-items (->> (get lines 1) (re-seq #"\d+") (mapv edn/read-string) (mapv bigint))
         operation-raw (get lines 2)
         operation-op (->> operation-raw (re-find #"[\+\*]") keyword)
         [_ _ operation-arg-str] (->> operation-raw (re-find #".*(\+|\*) (\d+|old)"))
@@ -80,8 +78,8 @@
 (defn get-op
   [op]
   (condp = op
-        :* *
-        :+ +))
+    :* *
+    :+ +))
 
 (defn get-arg
   [self arg]
@@ -101,8 +99,8 @@
                   modified-worry (quot modified-worry 3)]
               ;; test the new worry score and send to correct monkey
               (if (= 0 (mod modified-worry test))
-                (update to-return true-id conj modified-worry)
-                (update to-return false-id conj modified-worry))))
+                (update to-return true-id (fnil conj []) modified-worry)
+                (update to-return false-id (fnil conj []) modified-worry))))
           {}
           items))
 (deftest test-process-monkey
@@ -111,29 +109,72 @@
                                 :test 23
                                 :true 2
                                 :false 3})]
-    (is (= {3 [620 500]} result)))
+    (is (= {3 [500 620]} result)))
   ;; testing old * old
   (let [result (process-monkey {:items [10 20 30]
                                 :operation {:op :* :arg :old}
                                 :test 2
                                 :true 1
                                 :false 2})]
-    (is (= {2 [133 33] 1 [300]} result))))
+    (is (= {2 [33 133] 1 [300]} result))))
 
 (defn process-monkeys
   [monkeys]
   (reduce (fn [monkeys monkey-id]
-            ;; get current monkey
-            ;; process monkey
-            ;; update monkeys map with results from process monkey
-            ;; Also update current monkey, (clear their items)
+            (let [monkey (get monkeys monkey-id)
+                  num-inspected (count (get-in monkeys [monkey-id :items]))
+                  processed-monkey (process-monkey monkey)
+                  monkeys (reduce-kv (fn [monkeys k v]
+                                       (let [monkeys (update-in monkeys [k :items] into v)]
+                                         monkeys))
+                                     monkeys
+                                     processed-monkey)
+                  monkeys (assoc-in monkeys [monkey-id :items] [])
+                  monkeys (update-in monkeys [monkey-id :num-inspected] (fnil + 0) num-inspected)]
+              monkeys)
             )
           monkeys
-          (range 1 (count monkeys))))
+          (range 0 (count monkeys))))
+
+(defn calculate-monkey-business
+  [lines rounds]
+  (let [monkeys (->>
+                 ;; partition by monkey spec
+                 lines
+                 (partition-by #(= "" %))
+                 (filter #(not= [""] %))
+                 (mapv #(into [] %)) ;; convert to vector to allow indexing lines in a monkey spec
+                 ;; parse monkey spec
+                 (mapv parse-lines-monkey-rules)
+                 (apply merge) ;; combine all monkey specs 
+                 )
+
+        monkeys (reduce (fn [{:keys [monkeys]} _round_counter]
+                          (let [new-monkeys (process-monkeys monkeys)]
+                            {:monkeys new-monkeys}))
+                        {:monkeys monkeys}
+                        (range rounds))
+        monkey-num-inspected (->> monkeys
+                                  :monkeys
+                                  keys
+                                  (mapv #(get-in monkeys [:monkeys % :num-inspected]))
+                                  (sort >))
+        monkey-business (apply * (take 2 monkey-num-inspected))]
+    (assoc monkeys
+           :monkey-business monkey-business)))
+
+(deftest test-sample-p1
+  (is (= 10605 (->> (calculate-monkey-business (get-sample-input) 20)
+                    :monkey-business))))
 
 (defn problem-1
   []
   (let [lines (with-open [file (io/reader "/home/calvinq/projects/aoc/2022/day11/input.txt")]
                 (doall (line-seq file)))]
+    (calculate-monkey-business lines 20)))
+(time (->> (problem-1)
+             :monkey-business))
+; 99852
+; 2.6ms
 
-    (let [])))
+
