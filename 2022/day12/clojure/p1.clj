@@ -61,11 +61,8 @@
         left (let [dir [pos-r (dec pos-c)]] (vector dir (get-in grid dir)))
         right (let [dir [pos-r (inc pos-c)]] (vector dir (get-in grid dir)))]
     (->> [up down left right]
-         (filter #(some? (second %)))
-         ;; TODO: switch to other condition commented out
-         (filter #(>= 1 (- (second %) curr) #_(abs (- curr (second %)))))
-         ;; TODO: split list to neighbors 1 distance up
-         ;; TODO: split list to neighbors that are downwards
+         (filterv #(some? (second %)))
+         (filterv #(>= 1 (- (second %) curr) #_(abs (- curr (second %)))))
          (mapv first))))
 
 (comment
@@ -85,62 +82,59 @@
                    [7 8 9]]]
     (create-blank-grid test-grid)))
 
+(defn find-smallest-unvisited-node
+  [visited unvisited distance-grid]
+  (let [unvisited-clean (set/difference unvisited visited)
+        unvisisted-dist (->> unvisited-clean
+                             (mapv (fn [n] [(get-in distance-grid n) n]))
+                             (filter #(not (nil? (first %))))
+                             (sort-by first >))]
+    (if (empty? unvisisted-dist)
+      nil
+      (->> (last unvisisted-dist)
+           second))))
+
 (defn find-shortest-distance
-  [curr target heights {:as solution :keys [distance-grid visited]}]
+  [_curr _target heights solution]
+  (loop [{:keys [distance-grid visited unvisited] :as solution} solution]
+    (let [curr (find-smallest-unvisited-node visited unvisited distance-grid)]
+      (cond
+        (empty? unvisited)
+        solution
 
-  (do (println "-----")
-        (println curr visited)
-        (print-grid distance-grid))
-  (cond
-    ;; already visited this node
-    (get visited curr)
-    ;; check if there are any smallest neighbors
-    (do (println "already visited:" curr)
-        solution)
+        (nil? curr)
+        (assoc solution
+               :unvisited (disj unvisited curr))
 
-    ;; haven't visited this node before
-    :else
-    (let [neighbors (set (get-neighbors heights curr))
-          not-visited
-          (set/difference neighbors visited)
-          _ (do (println "not-visited" not-visited)
-                (println "neighbors" neighbors))
+        (get visited curr)
+        ;; pop from q, since we already processed this node
+        (assoc solution
+               :unvisited (disj unvisited curr))
 
-          ;; updated visited
-          visited (conj visited curr)
+        :else
+        (let [curr-dist (get-in distance-grid curr)
+              neighbors (get-neighbors heights curr)
+              unvisited-neighbors (set (filterv #(nil? (get visited %)) neighbors))
 
-          ;; for all the known neighbors, find shortest path
-          smallest-neighbor-dist (->> (mapv (fn [pos] (get-in distance-grid pos)) neighbors)
-                                      (filter some?)
-                                      (apply min 10000000000000))
-          curr-dist (get-in distance-grid curr)
-          ;; TODO: only update curr-dist with neighbors that are up climbs, ignore downclimb visited nodes
-          ;; update curr-dist with smallest known neighbor 
-          distance-grid (assoc-in distance-grid curr (min (inc smallest-neighbor-dist) curr-dist))
-          ;; refetch curr-dist, if it was updated
-          curr-dist (get-in distance-grid curr)
-          new-dist-for-neighbor (inc curr-dist)
-          ;; update neighbor distances with smallest distance
-          distance-grid (reduce (fn [distance-grid pos]
-                                  (let [pos-height (get-in distance-grid pos)]
-                                    (if (nil? pos-height)
-                                      (assoc-in distance-grid pos new-dist-for-neighbor)
-                                      (assoc-in distance-grid pos (min pos-height new-dist-for-neighbor)))))
-                                distance-grid
-                                neighbors)]
-
-      (cond (= target curr)
-            (do (println "hit")
-                {:distance-grid distance-grid
-                 :visited (conj visited curr)})
-
-            ;; traverse to neighbors
-            :else
-            (reduce (fn [solution neighbor]
-                      (find-shortest-distance neighbor target heights solution))
-                    {:distance-grid distance-grid
-                     :visited visited}
-                    not-visited)))))
+              distance-grid (reduce (fn [distance-grid n]
+                                      (if (not (get visited n))
+                                        (let [n-distance (get-in distance-grid n)]
+                                          (if (nil? n-distance)
+                                            (assoc-in distance-grid n (inc curr-dist))
+                                            (assoc-in distance-grid n (min (inc curr-dist) n-distance))))
+                                        distance-grid))
+                                    distance-grid
+                                    unvisited-neighbors)
+              #_#__ (do
+                      (print-grid distance-grid)
+                      (println "curr" curr)
+                      (println "visited" visited)
+                      (println "unvisited" unvisited-neighbors)
+                      (println "------"))]
+          (recur (assoc solution
+                        :distance-grid distance-grid
+                        :visited (conj visited curr)
+                        :unvisited (into unvisited unvisited-neighbors))))))))
 
 (defn p1
   [lines]
@@ -153,10 +147,10 @@
     (println "end" end-pos)
     (let [final
           (find-shortest-distance start-pos end-pos height-map {:distance-grid shortest-distance-grid
-                                                                :visited #{}})]
-      (println "result" (get-in final (into [:distance-grid] end-pos)))
-      final
-      #_(get-in final (into [:distance-grid] start-pos)))))
+                                                                :visited #{}
+                                                                :unvisited #{start-pos}})]
+      #_final
+      (get-in final (into [:distance-grid] end-pos)))))
 
 (comment
   (print-grid (->> (p1 (get-sample-input))
@@ -168,5 +162,5 @@
                 (doall (line-seq file)))]
     (p1 lines)))
 (comment
-  (print-grid (->> (problem-1)
-                   :distance-grid)))
+  (time (problem-1))) ; 520
+; 5400ms
