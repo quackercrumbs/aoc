@@ -154,6 +154,8 @@
         {end-pos \E} (get-start-and-end lines)
         shortest-distance-grid (create-blank-grid height-map)
         start-positions (find-start-positions height-map)
+
+        ;; initialize all starting positions with 0
         shortest-distance-grid (reduce (fn [distance-grid start-position]
                                          (assoc-in distance-grid start-position 0))
                                        shortest-distance-grid
@@ -162,6 +164,7 @@
     (->
      (find-shortest-distance height-map {:distance-grid shortest-distance-grid
                                          :visited #{}
+                                         ;; we want to visit all starting positions!
                                          :unvisited (set start-positions)})
      (get-in (into [:distance-grid] end-pos)))))
 
