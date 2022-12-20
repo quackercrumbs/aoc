@@ -85,9 +85,13 @@
   (time (->> (get-problem-input)
              parse-input
              (mapv is-in-order)
+             ;; get indexes
              (map-indexed (fn [i result]
-                            (vector i result)))
+                            ;; 1 indexed, so have to increment
+                            (vector (inc i) result)))
+             ;; we only care about in order packets
              (filter (fn [[_index result]] (= :yes result)))
-             (mapv (comp inc first))
+             ;; only want the index
+             (mapv first)
              (apply +)))) ; 4643
 ; 4.4ms
