@@ -15,6 +15,8 @@ pub fn main() !void {
 
     const result = try problem1(allocator, inputFile);
     std.debug.print("problem1={any}\n", .{result});
+    const result2 = try problem2(allocator, inputFile);
+    std.debug.print("problem2={any}\n", .{result2});
 }
 
 fn isDigit(byte: u8) bool {
@@ -159,6 +161,147 @@ fn problem1(allocator: std.mem.Allocator, inputFile: []const u8) !u32 {
         total += partNumber;
     }
     // std.debug.print("Total: {d}\n", .{total});
+    return total;
+}
+
+fn problem2(allocator: std.mem.Allocator, inputFile: []const u8) !u32 {
+    // damn io
+    var file = try std.fs.cwd().openFile(inputFile, .{});
+    defer file.close();
+    var buf_reader = std.io.bufferedReader(file.reader());
+    var in_stream = buf_reader.reader();
+
+    // Similar to how we do island labeling, each island is its own part.
+    // The problem doesn't say it explicitly, but maybe there can be
+    // duplicate duplicate part numbers.
+    var partIdCounter: u16 = 0;
+    var locationToPartId = std.AutoHashMap(Location, u16).init(allocator);
+    defer locationToPartId.deinit();
+
+    // Each part we find has a number
+    var partIdToPartNumber = std.AutoHashMap(u16, u16).init(allocator);
+    defer partIdToPartNumber.deinit();
+
+    // used to identify if a part id belongs to the engine.
+    var locationToSymbol = std.AutoHashMap(Location, u8).init(allocator);
+    defer locationToSymbol.deinit();
+
+    // holds all the data from input
+    var linesData = std.ArrayList([]u8).init(allocator);
+    defer deinitStringArray(allocator, linesData);
+
+    var lineIndex: usize = 0;
+    var lineLength: usize = 0;
+    var buf: [4096]u8 = undefined;
+    while (try in_stream.readUntilDelimiterOrEof(&buf, '\n')) |line| {
+        // We don't need to do this, but curious how we can copy strings!
+        try linesData.append(try allocator.dupe(u8, line));
+        lineLength = line.len;
+
+        var index: usize = 0;
+        while (index < line.len) {
+            if (isDigit(line[index])) {
+                // find the index of the end of the number
+                var endNumberIndex = index + 1;
+                while (endNumberIndex < line.len) {
+                    if (!isDigit(line[endNumberIndex])) {
+                        break;
+                    }
+                    endNumberIndex += 1;
+                }
+
+                const partNumberSlice = line[index..endNumberIndex];
+                const partNumber = try std.fmt.parseInt(u16, partNumberSlice, 10);
+                try partIdToPartNumber.put(partIdCounter, partNumber);
+                for (0..partNumberSlice.len) |sliceOffset| {
+                    // This makes it easy to look up neighboring part numbers
+                    // near a symbol
+                    //std.debug.print("parsed [{d} {d}]{d}\n", .{ lineIndex, index + sliceOffset, partNumber });
+                    try locationToPartId.put(Location{ .lineIndex = lineIndex, .index = index + sliceOffset }, partIdCounter);
+                }
+                partIdCounter += 1;
+
+                index = endNumberIndex;
+            } else if (line[index] != '.') {
+                // it is a symbol
+                //std.debug.print("parsed symbol {c}\n", .{line[index]});
+                try locationToSymbol.put(Location{ .lineIndex = lineIndex, .index = index }, line[index]);
+                index += 1;
+            } else {
+                index += 1;
+            }
+        }
+        lineIndex += 1;
+    }
+    //debugArrayList(linesData);
+    //debugLocationToIntMap(locationToPartId);
+    //debugIntToIntMap(partIdToPartNumber);
+    //debugLocationToCharMap(locationToSymbol);
+
+    var total: u32 = 0;
+    const maxLineIndex = lineIndex - 1;
+    const maxIndex = lineLength - 1;
+    // identify all the engine parts
+    var symbolIter = locationToSymbol.keyIterator();
+    while (symbolIter.next()) |symbolLocation| {
+        if (locationToSymbol.get(symbolLocation.*)) |symbol| {
+            if (symbol == '*') {
+                // Its potentially a gear!
+
+                // collect all the nearby engine parts
+                var enginePartIds = std.AutoHashMap(u16, bool).init(allocator);
+                defer enginePartIds.deinit();
+
+                // gotta find all the neighoring part ids
+                const symLineIndex = symbolLocation.lineIndex;
+                const index = symbolLocation.index;
+                const aboveLineIndex = if (symLineIndex > 0) symLineIndex - 1 else symLineIndex;
+                const belowLineIndex = if (symLineIndex < maxLineIndex) symLineIndex + 1 else symLineIndex;
+                const leftIndex = if (index > 0) index - 1 else index;
+                const rightIndex = if (index < maxIndex) index + 1 else index;
+
+                if (locationToPartId.get(Location{ .lineIndex = aboveLineIndex, .index = leftIndex })) |partId| {
+                    try enginePartIds.put(partId, true);
+                }
+                if (locationToPartId.get(Location{ .lineIndex = aboveLineIndex, .index = index })) |partId| {
+                    try enginePartIds.put(partId, true);
+                }
+                if (locationToPartId.get(Location{ .lineIndex = aboveLineIndex, .index = rightIndex })) |partId| {
+                    try enginePartIds.put(partId, true);
+                }
+                if (locationToPartId.get(Location{ .lineIndex = symLineIndex, .index = leftIndex })) |partId| {
+                    try enginePartIds.put(partId, true);
+                }
+                if (locationToPartId.get(Location{ .lineIndex = symLineIndex, .index = rightIndex })) |partId| {
+                    try enginePartIds.put(partId, true);
+                }
+                if (locationToPartId.get(Location{ .lineIndex = belowLineIndex, .index = leftIndex })) |partId| {
+                    try enginePartIds.put(partId, true);
+                }
+                if (locationToPartId.get(Location{ .lineIndex = belowLineIndex, .index = index })) |partId| {
+                    try enginePartIds.put(partId, true);
+                }
+                if (locationToPartId.get(Location{ .lineIndex = belowLineIndex, .index = rightIndex })) |partId| {
+                    try enginePartIds.put(partId, true);
+                }
+
+                if (enginePartIds.count() == 2) {
+                    // gears have exactly 2 parts
+                    var ratio: u32 = 1;
+                    var enginePartIdsIter = enginePartIds.keyIterator();
+                    while (enginePartIdsIter.next()) |partId| {
+                        const partNumber = partIdToPartNumber.get(partId.*).?;
+                        ratio *= partNumber;
+                    }
+                    // std.debug.print("Total: {d}\n", .{total});
+                    total += ratio;
+                }
+            }
+        }
+    }
+    //debugIntToBoolMap(enginePartIds);
+
+    // sum all the engine part ids
     return total;
 }
 
@@ -344,4 +487,14 @@ test "range" {
     }
 
     try std.testing.expectEqual(total, 3);
+}
+
+test "sample problem2" {
+    // Create allocator
+    const allocator = std.testing.allocator;
+
+    const result = try problem2(allocator, "../sample.txt");
+    std.debug.print("problem2={any}\n", .{result});
+
+    try std.testing.expectEqual(result, 467835);
 }
