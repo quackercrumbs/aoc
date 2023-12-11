@@ -69,34 +69,45 @@ fn problem1(allocator: std.mem.Allocator, inputFile: []const u8) !u16 {
         try linesData.append(try allocator.dupe(u8, line));
         lineLength = line.len;
 
-        var iter = std.mem.splitSequence(u8, line, ".");
-        while (iter.peek()) |partNumberSlice| {
-            if (partNumberSlice.len > 0) {
-                if (isDigit(partNumberSlice[0])) {
-                    // We've encountered a part number
-                    const partNumberString = extractNumberSlice(partNumberSlice);
-                    const partNumber = try std.fmt.parseInt(u16, partNumberString, 10);
-                    try partIdToPartNumber.put(partIdCounter, partNumber);
-                    for (0..partNumberSlice.len) |sliceOffset| {
-                        // This makes it easy to look up neighboring part numbers
-                        // near a symbol
-                        try locationToPartId.put(Location{ .lineIndex = lineIndex, .index = iter.index.? + sliceOffset }, partIdCounter);
+        var index: usize = 0;
+        while (index < line.len) {
+            if (isDigit(line[index])) {
+                // find the index of the end of the number
+                var endNumberIndex = index + 1;
+                while (endNumberIndex < line.len) {
+                    if (!isDigit(line[endNumberIndex])) {
+                        break;
                     }
-                    partIdCounter += 1;
-                } else {
-                    // We've encountered a symbol
-                    try locationToSymbol.put(Location{ .lineIndex = lineIndex, .index = iter.index.? }, partNumberSlice[0]);
+                    endNumberIndex += 1;
                 }
+
+                const partNumberSlice = line[index..endNumberIndex];
+                const partNumber = try std.fmt.parseInt(u16, partNumberSlice, 10);
+                try partIdToPartNumber.put(partIdCounter, partNumber);
+                for (0..partNumberSlice.len) |sliceOffset| {
+                    // This makes it easy to look up neighboring part numbers
+                    // near a symbol
+                    //std.debug.print("parsed [{d} {d}]{d}\n", .{ lineIndex, index + sliceOffset, partNumber });
+                    try locationToPartId.put(Location{ .lineIndex = lineIndex, .index = index + sliceOffset }, partIdCounter);
+                }
+                partIdCounter += 1;
+
+                index = endNumberIndex;
+            } else if (line[index] != '.') {
+                // it is a symbol
+                //std.debug.print("parsed symbol {c}\n", .{line[index]});
+                try locationToSymbol.put(Location{ .lineIndex = lineIndex, .index = index }, line[index]);
+                index += 1;
+            } else {
+                index += 1;
             }
-            // just advance the iterator
-            _ = iter.next();
         }
         lineIndex += 1;
     }
-    debugArrayList(linesData);
-    debugLocationToIntMap(locationToPartId);
-    debugIntToIntMap(partIdToPartNumber);
-    debugLocationToCharMap(locationToSymbol);
+    //debugArrayList(linesData);
+    //debugLocationToIntMap(locationToPartId);
+    //debugIntToIntMap(partIdToPartNumber);
+    //debugLocationToCharMap(locationToSymbol);
 
     const maxLineIndex = lineIndex - 1;
     const maxIndex = lineLength - 1;
@@ -122,10 +133,10 @@ fn problem1(allocator: std.mem.Allocator, inputFile: []const u8) !u16 {
         if (locationToPartId.get(Location{ .lineIndex = aboveLineIndex, .index = rightIndex })) |partId| {
             try enginePartIds.put(partId, true);
         }
-        if (locationToPartId.get(Location{ .lineIndex = index, .index = leftIndex })) |partId| {
+        if (locationToPartId.get(Location{ .lineIndex = symLineIndex, .index = leftIndex })) |partId| {
             try enginePartIds.put(partId, true);
         }
-        if (locationToPartId.get(Location{ .lineIndex = index, .index = rightIndex })) |partId| {
+        if (locationToPartId.get(Location{ .lineIndex = symLineIndex, .index = rightIndex })) |partId| {
             try enginePartIds.put(partId, true);
         }
         if (locationToPartId.get(Location{ .lineIndex = belowLineIndex, .index = leftIndex })) |partId| {
@@ -138,7 +149,7 @@ fn problem1(allocator: std.mem.Allocator, inputFile: []const u8) !u16 {
             try enginePartIds.put(partId, true);
         }
     }
-    debugIntToBoolMap(enginePartIds);
+    //debugIntToBoolMap(enginePartIds);
 
     // sum all the engine part ids
     var total: u16 = 0;
@@ -147,7 +158,7 @@ fn problem1(allocator: std.mem.Allocator, inputFile: []const u8) !u16 {
         const partNumber = partIdToPartNumber.get(partId.*).?;
         total += partNumber;
     }
-    std.debug.print("Total: {d}\n", .{total});
+    // std.debug.print("Total: {d}\n", .{total});
     return total;
 }
 
@@ -295,4 +306,42 @@ test "sample problem1" {
     std.debug.print("problem1={any}\n", .{result});
 
     try std.testing.expectEqual(result, 4361);
+}
+
+test "parse sample line" {
+    const line = "10...20*....*300....*400*....500....600";
+    var index: usize = 0;
+    while (index < line.len) {
+        if (isDigit(line[index])) {
+            // find the index of the end of the number
+            var endNumberIndex = index + 1;
+            while (endNumberIndex < line.len) {
+                if (!isDigit(line[endNumberIndex])) {
+                    break;
+                }
+                endNumberIndex += 1;
+            }
+
+            const numberSlice = line[index..endNumberIndex];
+            const number = try std.fmt.parseInt(u16, numberSlice, 10);
+            std.debug.print("parsed {d}\n", .{number});
+
+            index = endNumberIndex;
+        } else if (line[index] != '.') {
+            // it is a symbol
+            std.debug.print("parsed symbol {c}\n", .{line[index]});
+            index += 1;
+        } else {
+            index += 1;
+        }
+    }
+}
+
+test "range" {
+    var total: usize = 0;
+    for (0..3) |n| {
+        total += n;
+    }
+
+    try std.testing.expectEqual(total, 3);
 }
