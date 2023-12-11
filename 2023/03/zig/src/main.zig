@@ -35,7 +35,7 @@ fn extractNumberSlice(slice: []const u8) []const u8 {
     return slice;
 }
 
-fn problem1(allocator: std.mem.Allocator, inputFile: []const u8) !u16 {
+fn problem1(allocator: std.mem.Allocator, inputFile: []const u8) !u32 {
     // damn io
     var file = try std.fs.cwd().openFile(inputFile, .{});
     defer file.close();
@@ -152,7 +152,7 @@ fn problem1(allocator: std.mem.Allocator, inputFile: []const u8) !u16 {
     //debugIntToBoolMap(enginePartIds);
 
     // sum all the engine part ids
-    var total: u16 = 0;
+    var total: u32 = 0;
     var enginePartIdsIter = enginePartIds.keyIterator();
     while (enginePartIdsIter.next()) |partId| {
         const partNumber = partIdToPartNumber.get(partId.*).?;
