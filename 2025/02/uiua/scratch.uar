@@ -1,0 +1,26 @@
+(&fras "../input.txt"
+ ParseInput
+ # ProblemA⊢
+ # ≡/+
+ ≡ProblemA
+)
+IsInvalidID ← (
+  °⋕ # to string
+  ⊸⧻
+  ⊸(=0◿2)
+  ⨬(0 # odd len
+  | ⌊÷2
+    ⟜⊸↙    # take first half
+    ⊃⊙⋅∘⋅∘ # Reorder: a c b
+    ⊸↘     # take second half
+    ⊙⋅∘    # Reorder: a c b
+    /×/=⊟
+  )
+)
+ProblemA ← (
+  ⍜⊣ (+1) # Increment right (inclusive)
+  #⇡⊸/-    # Range left to right
+  # +?(⊙⊢)
+  # ⊸≡IsInvalidID
+  # ▽
+)
