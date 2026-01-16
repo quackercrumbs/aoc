@@ -28,6 +28,10 @@ IsInvalidID ← (
 )
 # ≡◇IsInvalidID {1_2_3 4_5_6_7 10_11_12 1000_1010_1111}
 
+# =1⧻◴≡⋕⊕□ ⍆  ˜↯ ⇡3 ¤ ⊸⧻ "1111111"
+# =1⧻◴≡⋕⊕□ ⍆ ˜↯ ⇡3 ⊸△ "1111111"
+# =1⧻◴≡⋕⊕□ ⍆ ˜↯ ⇡3 ⊸△ "111111"
+
 ProblemA ← (
   +1 ⊸≡/-       # length + 1 to include right
   ≡(□ ⇡ ⊢)      # generate ranges 
@@ -46,4 +50,4 @@ ProblemA ← (
 # ProblemA [11_22 11_23]
 
 # ProblemA ParseInput &fras "../sample.txt" # 1227775554
-# ProblemA ParseInput &fras "../input.txt" ## 32976912643
+# ProblemA ParseInput &fras "../input.txt" # 32976912643
