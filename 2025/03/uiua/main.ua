@@ -20,9 +20,12 @@ MaxTwo ← ≡(
 
 SolveA ← (
   ≡(
-    ↘¯1⟜⍜⇌\↥ # find the max of 
-    ⊙(↘¯1↻1)
-    /↥+×10
+    ⟜⍜⇌(↘¯1\↥)
+    # find the max at each position
+    # (dropping and then under reverse, is the same as (under reverse, rotate and drop first))
+    # This effectively like an offset the max array by 1 (use question mark to debug this if needed or look at previous commit)
+    ↘¯1    # Should not look at the end of original array (also to match size of the max scan array)
+    /↥+×10 # just dealing with 2 digit numbers
   )
   /+ # sum results each row
 )
