@@ -1,0 +1,59 @@
+Parse ← (
+  ⊜∘ ⊸≠ @\n
+)
+# Parse &fras "../sample.txt"
+CountSplits ← (
+  ⊢/+/+ ⧈(/× = [¤ @| ¤ @^]) 2_1
+)
+
+# CountSplits Parse &fras "../sample-result.txt" ## 21
+# WIP
+# ⌝⊸⊡ ⊃(⊂|@|) ⊃(⋅(+1)|∘)⊃(˜⨂ @S⋅⊡|⋅∘|⋅⋅∘|∘) 2 0 ["...S.." "......"]
+# ⊃(˜⨂ @S⋅⊡|˜⨂ @^⋅⊡|˜⨂ @|⋅⊡) 2 0 ["...S.." "......"]
+# ⊃(▽⟜(⇡⧻)⌕ @S⋅⊡|⋅∘|⋅⋅∘|∘) 2 0 ["...S.." "......"]
+
+# WIP Replacing
+ReplaceWithBeam ← (
+  ⊃(⍉˜⊟⊙(+1)|⋅⋅∘|@|⋅∘)
+  # Uiuaism
+  # Set values at indices within a target matrix.
+  # It takes three arguments:
+  # 1) an array of points for the indices to replace;
+  # 2) the original matrix;
+  # 3) the value to set the given indices to.
+  ⊙◌∧(⊸⍜⊡◌⊙°□)⊙□
+)
+# ReplaceWithBeam [1 3 4] 0 [".|.||" "....."]
+
+# WIP Finding
+FindStart ← (
+  ⊃(⊚⌕ @S⋅⊡|⋅∘|⋅⋅∘|∘)
+)
+# FindStart 2 0 ["...S.." "......"] # WIP, OKAY
+# ReplaceWithBeam FindStart 2 0 ["...S.." "......"] # WIP, OKAY
+
+Simulate ← (
+  # TODO: Probably a recursive function
+  # Inputs are the current state and the current row we're looking at
+  ⨬(88
+  | # TODO: If S, find location and update next row
+
+    # ⌝⊸⊡ ⊃(⊂|@|) ⊃(⋅(+1)|∘)⊃(˜⨂ @S⊡|∘|⋅∘)
+    # ⌝⊸⊡ ⊃(⊂|@|) ⊃(⋅(+1)|∘)⊃(˜⨂ @S⋅⊡|⋅∘|⋅⋅∘|∘)
+    # ⊃(˜⨂ @S⋅⊡|⋅∘|⋅⋅∘|∘)
+    FindStart
+    # ReplaceWithBeam
+
+    # TODO: If no S, find all bars and update next row
+    ⊃(∘|⋅(+1))? # increment counter
+
+    # TODO: make recurive call
+  )⊃(˜>|∘|⋅∘)
+)
+
+SimulateWIP ← (
+  FindStart
+  ReplaceWithBeam
+)
+# SimulateWIP ⊃(⧻|0∘) Parse &fras "../sample.txt"
+"hello"
